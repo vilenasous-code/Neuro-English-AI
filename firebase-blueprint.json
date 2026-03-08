@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information and learning preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User's unique ID" },
+        "email": { "type": "string", "format": "email" },
+        "level": { "type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "level", "createdAt"]
+    },
+    "MindMap": {
+      "title": "MindMap",
+      "description": "A generated mind map for a specific topic.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner's user ID" },
+        "topic": { "type": "string" },
+        "level": { "type": "string" },
+        "nodes": { "type": "string", "description": "JSON stringified array of React Flow nodes" },
+        "edges": { "type": "string", "description": "JSON stringified array of React Flow edges" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "topic", "level", "nodes", "edges", "createdAt"]
+    },
+    "Exercise": {
+      "title": "Exercise",
+      "description": "An active recall exercise generated from a mind map.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner's user ID" },
+        "mapId": { "type": "string" },
+        "question": { "type": "string" },
+        "type": { "type": "string", "enum": ["sentence", "describe", "complete"] },
+        "answer": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "learning", "review", "mastered"] },
+        "nextReviewDate": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "mapId", "question", "type", "answer", "status", "nextReviewDate", "createdAt"]
+    },
+    "Dialogue": {
+      "title": "Dialogue",
+      "description": "A contextual dialogue generated from a mind map.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Owner's user ID" },
+        "mapId": { "type": "string" },
+        "content": { "type": "string", "description": "JSON stringified array of dialogue turns" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "mapId", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profiles."
+    },
+    "/mindmaps/{mapId}": {
+      "schema": { "$ref": "#/entities/MindMap" },
+      "description": "Stores generated mind maps."
+    },
+    "/exercises/{exerciseId}": {
+      "schema": { "$ref": "#/entities/Exercise" },
+      "description": "Stores active recall exercises."
+    },
+    "/dialogues/{dialogueId}": {
+      "schema": { "$ref": "#/entities/Dialogue" },
+      "description": "Stores contextual dialogues."
+    }
+  }
+}
