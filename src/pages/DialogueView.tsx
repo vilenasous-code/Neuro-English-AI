@@ -1,68 +1,42 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
-import { MessageSquare, ArrowLeft, User as UserIcon } from 'lucide-react';
-import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { MessageSquare, ArrowLeft } from 'lucide-react';
+import { useDialogue } from '../hooks/useDialogue';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const DialogueView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [dialogue, setDialogue] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { dialogue, loading, error } = useDialogue(id, user?.uid);
 
   useEffect(() => {
-    if (!id || !user) return;
-
-    const fetchDialogue = async () => {
-      try {
-        const docRef = doc(db, 'dialogues', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.content) {
-            setDialogue(JSON.parse(data.content));
-          }
-        } else {
-          console.error("No such document!");
-          navigate('/dialogues');
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `dialogues/${id}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDialogue();
-  }, [id, user, navigate]);
+    if (error) {
+      console.error(error);
+      navigate('/dialogues');
+    }
+  }, [error, navigate]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <LoadingSpinner color="blue" />;
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto h-full flex flex-col">
-      <header className="mb-8 flex items-center gap-4">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto h-full flex flex-col">
+      <header className="mb-6 md:mb-8 flex items-start md:items-center gap-4">
         <button 
           onClick={() => navigate(-1)}
-          className="p-2 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          className="p-2 rounded-xl hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors mt-1 md:mt-0 shrink-0"
         >
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
-            <MessageSquare className="text-blue-500" />
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center gap-2 md:gap-3">
+            <MessageSquare className="text-blue-500 shrink-0" />
             Contextual Dialogue
           </h1>
-          <p className="text-zinc-400 mt-1">
+          <p className="text-zinc-400 mt-1 text-sm md:text-base">
             Read through the conversation to see vocabulary in context.
           </p>
         </div>

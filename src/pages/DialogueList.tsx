@@ -1,69 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
 import { MessageSquare, ArrowRight } from 'lucide-react';
-import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { useDialogues } from '../hooks/useDialogues';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 
 export const DialogueList: React.FC = () => {
   const { user } = useAuth();
-  const [dialogues, setDialogues] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchDialogues = async () => {
-      try {
-        const dialoguesQuery = query(
-          collection(db, 'dialogues'),
-          where('uid', '==', user.uid),
-          orderBy('createdAt', 'desc')
-        );
-        const snapshot = await getDocs(dialoguesQuery);
-        setDialogues(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, 'dialogues');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDialogues();
-  }, [user]);
+  const { dialogues, loading } = useDialogues(user?.uid);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <LoadingSpinner color="blue" />;
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <header className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <header className="mb-8 md:mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
           <MessageSquare className="text-blue-500" />
           Contextual Dialogues
         </h1>
-        <p className="text-zinc-400 text-lg">
+        <p className="text-zinc-400 text-base md:text-lg">
           Review generated conversations to see your vocabulary in action.
         </p>
       </header>
 
       {dialogues.length === 0 ? (
-        <div className="text-center py-24 bg-zinc-900/50 rounded-3xl border border-zinc-800 border-dashed">
-          <MessageSquare size={48} className="mx-auto text-zinc-600 mb-4" />
-          <h3 className="text-xl font-medium text-zinc-300 mb-2">No dialogues yet</h3>
-          <p className="text-zinc-500 mb-8 max-w-md mx-auto">
-            Generate dialogues from your mind maps to practice reading vocabulary in context.
-          </p>
-          <Link to="/mindmaps" className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium">
-            Go to Mind Maps
-          </Link>
-        </div>
+        <EmptyState 
+          icon={<MessageSquare size={48} />}
+          title="No dialogues yet"
+          description="Generate dialogues from your mind maps to practice reading vocabulary in context."
+          actionText="Go to Mind Maps"
+          actionLink="/mindmaps"
+          actionIcon={null}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dialogues.map((dialogue) => (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -16,35 +16,10 @@ import { GenerateDialogue } from './pages/GenerateDialogue';
 import { Settings } from './pages/Settings';
 import { ImageAssociation } from './pages/ImageAssociation';
 
-// @ts-ignore
-const hasSelectedApiKey = async () => window.aistudio?.hasSelectedApiKey ? window.aistudio.hasSelectedApiKey() : true;
-// @ts-ignore
-const openSelectKey = async () => window.aistudio?.openSelectKey ? window.aistudio.openSelectKey() : null;
-
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  const [hasKey, setHasKey] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    const checkKey = async () => {
-      try {
-        // Add a timeout to prevent infinite loading if the API is unresponsive
-        const timeoutPromise = new Promise<boolean>((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 3000)
-        );
-        const has = await Promise.race([
-          hasSelectedApiKey(),
-          timeoutPromise
-        ]);
-        setHasKey(has);
-      } catch (e) {
-        setHasKey(false);
-      }
-    };
-    checkKey();
-  }, []);
-
-  if (loading || hasKey === null) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
@@ -56,36 +31,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" />;
   }
 
-  if (!hasKey) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 text-center">
-        <div className="max-w-md w-full bg-zinc-900 p-8 rounded-3xl shadow-2xl border border-zinc-800">
-          <h2 className="text-2xl font-bold text-white mb-4">API Key Required</h2>
-          <p className="text-zinc-400 mb-6">
-            To use advanced features like high-quality image generation for vocabulary associations, please select your Google Cloud API key.
-            <br/><br/>
-            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="text-purple-400 hover:underline">
-              Learn more about billing
-            </a>
-          </p>
-          <button
-            onClick={async () => {
-              try {
-                await openSelectKey();
-              } catch (e) {
-                console.error("Error opening select key dialog:", e);
-              }
-              setHasKey(true); // Assume success to mitigate race condition
-            }}
-            className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors font-semibold"
-          >
-            Select API Key
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
   return <>{children}</>;
 };
 

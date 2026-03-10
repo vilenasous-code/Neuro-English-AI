@@ -52,18 +52,18 @@ export const MindMapGenerator: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <div className="mb-12 text-center">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto">
+      <div className="mb-8 md:mb-12 text-center">
         <div className="w-16 h-16 rounded-2xl bg-purple-600/20 flex items-center justify-center mx-auto mb-6">
           <Sparkles size={32} className="text-purple-400" />
         </div>
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-4">Generate Mind Map</h1>
-        <p className="text-zinc-400 text-lg">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-4">Generate Mind Map</h1>
+        <p className="text-zinc-400 text-base md:text-lg">
           Enter a topic and let AI create a structured visual learning map tailored to your level.
         </p>
       </div>
 
-      <form onSubmit={handleGenerate} className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-xl">
+      <form onSubmit={handleGenerate} className="bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-3xl shadow-xl">
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
             {error}

@@ -1,66 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase';
 import { Brain, Plus, BookOpen, MessageSquare, ArrowRight } from 'lucide-react';
-import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 
 export const Dashboard: React.FC = () => {
   const { user, userLevel } = useAuth();
-  const [recentMaps, setRecentMaps] = useState<any[]>([]);
-  const [dueReviews, setDueReviews] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchData = async () => {
-      try {
-        // Fetch recent mind maps
-        const mapsQuery = query(
-          collection(db, 'mindmaps'),
-          where('uid', '==', user.uid),
-          orderBy('createdAt', 'desc'),
-          limit(3)
-        );
-        const mapsSnapshot = await getDocs(mapsQuery);
-        setRecentMaps(mapsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-        // Fetch due reviews
-        const now = new Date().toISOString();
-        const reviewsQuery = query(
-          collection(db, 'exercises'),
-          where('uid', '==', user.uid),
-          where('nextReviewDate', '<=', now)
-        );
-        const reviewsSnapshot = await getDocs(reviewsQuery);
-        setDueReviews(reviewsSnapshot.size);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, 'dashboard_data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user]);
+  const { recentMaps, dueReviews, loading } = useDashboardData(user?.uid);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <header className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
+      <header className="mb-8 md:mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">
           Welcome back, {user?.displayName?.split(' ')[0] || 'Learner'}
         </h1>
-        <p className="text-zinc-400 text-lg">
+        <p className="text-zinc-400 text-base md:text-lg">
           Your current level is <span className="text-purple-400 font-semibold">{userLevel}</span>. Let's build some neural connections today.
         </p>
       </header>
@@ -104,15 +64,13 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {recentMaps.length === 0 ? (
-          <div className="text-center py-12 bg-zinc-900/50 rounded-3xl border border-zinc-800 border-dashed">
-            <Brain size={48} className="mx-auto text-zinc-600 mb-4" />
-            <h3 className="text-lg font-medium text-zinc-300 mb-2">No mind maps yet</h3>
-            <p className="text-zinc-500 mb-6">Create your first mind map to start learning.</p>
-            <Link to="/mindmaps/new" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors font-medium">
-              <Plus size={20} />
-              Create Mind Map
-            </Link>
-          </div>
+          <EmptyState 
+            icon={<Brain size={48} />}
+            title="No mind maps yet"
+            description="Create your first mind map to start learning."
+            actionText="Create Mind Map"
+            actionLink="/mindmaps/new"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recentMaps.map((map) => (

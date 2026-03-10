@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { generateExercises } from '../utils/gemini';
-import { doc, getDoc, collection, addDoc, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, collection, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { GenerationLoading } from '../components/GenerationLoading';
+import { GenerationError } from '../components/GenerationError';
 
 export const GeneratePractice: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -68,26 +70,15 @@ export const GeneratePractice: React.FC = () => {
   }, [id, user, navigate]);
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 mb-4">
-          {error}
-        </div>
-        <button onClick={() => navigate(-1)} className="text-purple-400 hover:text-purple-300">
-          Go Back
-        </button>
-      </div>
-    );
+    return <GenerationError error={error} />;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-emerald-600/20 flex items-center justify-center mb-6">
-        <BookOpen size={32} className="text-emerald-400" />
-      </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Generating Active Recall Exercises</h2>
-      <p className="text-zinc-400 mb-8">Analyzing your mind map to create personalized practice questions...</p>
-      <Loader2 size={32} className="animate-spin text-emerald-500" />
-    </div>
+    <GenerationLoading 
+      icon={<BookOpen size={32} className="text-emerald-400" />}
+      title="Generating Active Recall Exercises"
+      description="Analyzing your mind map to create personalized practice questions..."
+      colorClass="text-emerald-500"
+    />
   );
 };

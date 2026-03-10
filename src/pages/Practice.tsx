@@ -1,94 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { BookOpen, CheckCircle } from 'lucide-react';
-import { handleFirestoreError, OperationType } from '../utils/firestore';
-import { addDays } from 'date-fns';
 import { Flashcard } from '../components/Flashcard';
+import { useExercises } from '../hooks/useExercises';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export const Practice: React.FC = () => {
   const { user } = useAuth();
-  const [exercises, setExercises] = useState<any[]>([]);
+  const { exercises, setExercises, loading, updateExerciseReview } = useExercises(user?.uid);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchExercises = async () => {
-      try {
-        const now = new Date().toISOString();
-        const exercisesQuery = query(
-          collection(db, 'exercises'),
-          where('uid', '==', user.uid),
-          where('nextReviewDate', '<=', now)
-        );
-        const snapshot = await getDocs(exercisesQuery);
-        setExercises(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, 'exercises');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchExercises();
-  }, [user]);
 
   const handleReview = async (quality: number) => {
     if (!user || exercises.length === 0) return;
 
     const currentExercise = exercises[currentIndex];
     
-    // Simple spaced repetition logic
-    let nextStatus = currentExercise.status;
-    let daysToAdd = 1;
+    const success = await updateExerciseReview(
+      currentExercise.id, 
+      quality, 
+      currentExercise.status, 
+      currentExercise.createdAt
+    );
 
-    if (quality >= 3) {
-      if (currentExercise.status === 'new' || currentExercise.status === 'learning') {
-        nextStatus = 'review';
-        daysToAdd = 3;
-      } else if (currentExercise.status === 'review') {
-        nextStatus = 'mastered';
-        daysToAdd = 7;
-      } else {
-        daysToAdd = 14;
-      }
-    } else {
-      nextStatus = 'learning';
-      daysToAdd = 1;
-    }
-
-    const nextReviewDate = addDays(new Date(), daysToAdd).toISOString();
-
-    try {
-      await updateDoc(doc(db, 'exercises', currentExercise.id), {
-        status: nextStatus,
-        nextReviewDate,
-        createdAt: currentExercise.createdAt // keep immutable
-      });
-
-      // Move to next exercise
+    if (success) {
       setShowAnswer(false);
       if (currentIndex < exercises.length - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
-        // Finished all reviews
         setExercises([]);
       }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `exercises/${currentExercise.id}`);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-      </div>
-    );
+    return <LoadingSpinner color="emerald" />;
   }
 
   if (exercises.length === 0) {
@@ -108,10 +54,10 @@ export const Practice: React.FC = () => {
   const currentExercise = exercises[currentIndex];
 
   return (
-    <div className="p-8 max-w-3xl mx-auto h-full flex flex-col">
-      <header className="mb-8 flex items-center justify-between">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto h-full flex flex-col">
+      <header className="mb-6 md:mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
             <BookOpen className="text-emerald-500" />
             Active Recall
           </h1>
@@ -119,7 +65,7 @@ export const Practice: React.FC = () => {
             Reviewing {currentIndex + 1} of {exercises.length} items
           </p>
         </div>
-        <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 font-medium">
+        <div className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 font-medium text-sm md:text-base">
           {exercises.length - currentIndex} remaining
         </div>
       </header>

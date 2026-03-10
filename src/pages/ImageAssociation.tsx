@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
-import { Image as ImageIcon, Loader2, Download } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Download, Key } from 'lucide-react';
 
 export const ImageAssociation: React.FC = () => {
   const [word, setWord] = useState('');
@@ -8,10 +8,45 @@ export const ImageAssociation: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [hasKey, setHasKey] = useState(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      try {
+        // @ts-ignore
+        if (window.aistudio && window.aistudio.hasSelectedApiKey) {
+          // @ts-ignore
+          const selected = await window.aistudio.hasSelectedApiKey();
+          setHasKey(selected);
+        }
+      } catch (e) {
+        console.error("Failed to check API key status", e);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleSelectKey = async () => {
+    try {
+      // @ts-ignore
+      if (window.aistudio && window.aistudio.openSelectKey) {
+        // @ts-ignore
+        await window.aistudio.openSelectKey();
+        setHasKey(true);
+      }
+    } catch (e) {
+      console.error("Failed to open key selector", e);
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!word.trim()) return;
+
+    if (!hasKey) {
+      handleSelectKey();
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -53,9 +88,8 @@ export const ImageAssociation: React.FC = () => {
       console.error('Error generating image:', err);
       if (err.message?.includes('Requested entity was not found')) {
         setError('API Key error. Please select a valid paid Google Cloud API key.');
-        // Reset key selection state if needed
-        // @ts-ignore
-        window.aistudio?.openSelectKey();
+        setHasKey(false);
+        handleSelectKey();
       } else {
         setError(err.message || 'Failed to generate image. Please try again.');
       }
@@ -65,18 +99,34 @@ export const ImageAssociation: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto h-full flex flex-col">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto h-full flex flex-col">
+      <header className="mb-6 md:mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
           <ImageIcon className="text-pink-500" />
           Visual Associations
         </h1>
-        <p className="text-zinc-400 text-lg">
+        <p className="text-zinc-400 text-base md:text-lg">
           Generate high-quality images to help you remember difficult vocabulary.
         </p>
       </header>
 
-      <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-xl mb-8">
+      {!hasKey && (
+        <div className="bg-pink-500/10 border border-pink-500/20 p-6 rounded-3xl mb-8 text-center">
+          <Key className="w-12 h-12 text-pink-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">API Key Required</h2>
+          <p className="text-zinc-400 mb-6">
+            High-quality image generation requires a paid Google Cloud API key.
+          </p>
+          <button
+            onClick={handleSelectKey}
+            className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-medium transition-colors"
+          >
+            Select API Key
+          </button>
+        </div>
+      )}
+
+      <div className="bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-3xl shadow-xl mb-8">
         <form onSubmit={handleGenerate} className="space-y-6">
           {error && (
             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
@@ -119,7 +169,7 @@ export const ImageAssociation: React.FC = () => {
 
           <button
             type="submit"
-            disabled={loading || !word.trim()}
+            disabled={loading || !word.trim() || !hasKey}
             className="w-full py-4 px-6 bg-pink-600 hover:bg-pink-700 disabled:bg-pink-600/50 disabled:cursor-not-allowed text-white rounded-xl transition-colors font-semibold flex items-center justify-center gap-3 text-lg"
           >
             {loading ? (

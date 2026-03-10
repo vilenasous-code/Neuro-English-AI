@@ -4,8 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { generateDialogue } from '../utils/gemini';
 import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { GenerationLoading } from '../components/GenerationLoading';
+import { GenerationError } from '../components/GenerationError';
 
 export const GenerateDialogue: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +44,7 @@ export const GenerateDialogue: React.FC = () => {
         };
 
         const newDocRef = await addDoc(collection(db, 'dialogues'), newDialogue);
-        navigate(`/dialogues/${newDocRef.id}`);
+        navigate(`/dialogues/${newDocRef.id}`, { replace: true });
       } catch (err: any) {
         console.error('Error generating dialogue:', err);
         setError(err.message || 'Failed to generate dialogue.');
@@ -58,26 +60,15 @@ export const GenerateDialogue: React.FC = () => {
   }, [id, user, navigate]);
 
   if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 mb-4">
-          {error}
-        </div>
-        <button onClick={() => navigate(-1)} className="text-purple-400 hover:text-purple-300">
-          Go Back
-        </button>
-      </div>
-    );
+    return <GenerationError error={error} />;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-blue-600/20 flex items-center justify-center mb-6">
-        <MessageSquare size={32} className="text-blue-400" />
-      </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Generating Contextual Dialogue</h2>
-      <p className="text-zinc-400 mb-8">Creating a realistic conversation using your vocabulary...</p>
-      <Loader2 size={32} className="animate-spin text-blue-500" />
-    </div>
+    <GenerationLoading 
+      icon={<MessageSquare size={32} className="text-blue-400" />}
+      title="Generating Contextual Dialogue"
+      description="Creating a realistic conversation using your vocabulary..."
+      colorClass="text-blue-500"
+    />
   );
 };

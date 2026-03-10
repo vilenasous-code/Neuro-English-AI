@@ -115,7 +115,7 @@ export const generateExercises = async (topic: string, level: string, nodes: any
           type: Type.OBJECT,
           properties: {
             question: { type: Type.STRING },
-            type: { type: Type.STRING, enum: ['sentence', 'describe', 'complete'] },
+            type: { type: Type.STRING },
             answer: { type: Type.STRING }
           },
           required: ['question', 'type', 'answer']

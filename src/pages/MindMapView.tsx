@@ -1,13 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { CustomNode } from '../components/CustomNode';
 import { ArrowLeft, BookOpen, MessageSquare } from 'lucide-react';
-import { handleFirestoreError, OperationType } from '../utils/firestore';
+import { useMindMap } from '../hooks/useMindMap';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const nodeTypes = {
   customNode: CustomNode,
@@ -19,40 +18,25 @@ export const MindMapView: React.FC = () => {
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [mapData, setMapData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { mapData, loading, error } = useMindMap(id, user?.uid);
 
   useEffect(() => {
-    if (!id || !user) return;
+    if (error) {
+      console.error(error);
+      navigate('/mindmaps');
+    }
+  }, [error, navigate]);
 
-    const fetchMap = async () => {
-      try {
-        const docRef = doc(db, 'mindmaps', id);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setMapData(data);
-          
-          if (data.nodes) {
-            setNodes(JSON.parse(data.nodes));
-          }
-          if (data.edges) {
-            setEdges(JSON.parse(data.edges));
-          }
-        } else {
-          console.error("No such document!");
-          navigate('/mindmaps');
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `mindmaps/${id}`);
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    if (mapData) {
+      if (mapData.nodes) {
+        setNodes(JSON.parse(mapData.nodes));
       }
-    };
-
-    fetchMap();
-  }, [id, user, navigate, setNodes, setEdges]);
+      if (mapData.edges) {
+        setEdges(JSON.parse(mapData.edges));
+      }
+    }
+  }, [mapData, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
@@ -60,16 +44,12 @@ export const MindMapView: React.FC = () => {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
     <div className="flex flex-col h-full bg-zinc-950">
-      <header className="p-4 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between z-10">
+      <header className="p-4 border-b border-zinc-800 bg-zinc-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate(-1)}
@@ -83,17 +63,17 @@ export const MindMapView: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
           <button 
             onClick={() => navigate(`/practice/generate/${id}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl transition-colors font-medium text-sm border border-emerald-500/30"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 rounded-xl transition-colors font-medium text-sm border border-emerald-500/30 whitespace-nowrap"
           >
             <BookOpen size={16} />
             Generate Exercises
           </button>
           <button 
             onClick={() => navigate(`/dialogues/generate/${id}`)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition-colors font-medium text-sm border border-blue-500/30"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition-colors font-medium text-sm border border-blue-500/30 whitespace-nowrap"
           >
             <MessageSquare size={16} />
             Generate Dialogue

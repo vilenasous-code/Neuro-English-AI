@@ -24,18 +24,18 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <header className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto">
+      <header className="mb-8 md:mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2 flex items-center gap-3">
           <SettingsIcon className="text-zinc-500" />
           Settings
         </h1>
-        <p className="text-zinc-400 text-lg">
+        <p className="text-zinc-400 text-base md:text-lg">
           Manage your learning preferences and account details.
         </p>
       </header>
 
-      <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl shadow-xl">
+      <div className="bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-3xl shadow-xl">
         <form onSubmit={handleSave} className="space-y-8">
           
           <div>
