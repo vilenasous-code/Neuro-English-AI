@@ -18,6 +18,10 @@ export const ImageAssociation: React.FC = () => {
           // @ts-ignore
           const selected = await window.aistudio.hasSelectedApiKey();
           setHasKey(selected);
+        } else {
+          // Fallback for external deployments (Hostinger, Vercel, etc)
+          const key = process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyA9gaSqG8w7LBkkbA7xQ9VQwDhd_gk94II';
+          setHasKey(!!key);
         }
       } catch (e) {
         console.error("Failed to check API key status", e);
@@ -33,6 +37,8 @@ export const ImageAssociation: React.FC = () => {
         // @ts-ignore
         await window.aistudio.openSelectKey();
         setHasKey(true);
+      } else {
+        setError('Please configure VITE_GEMINI_API_KEY in your environment variables.');
       }
     } catch (e) {
       console.error("Failed to open key selector", e);
@@ -54,7 +60,8 @@ export const ImageAssociation: React.FC = () => {
 
     try {
       // Create a fresh instance to ensure it uses the latest selected API key
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const key = process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyA9gaSqG8w7LBkkbA7xQ9VQwDhd_gk94II';
+      const ai = new GoogleGenAI({ apiKey: key });
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-image-preview',
@@ -115,7 +122,7 @@ export const ImageAssociation: React.FC = () => {
           <Key className="w-12 h-12 text-pink-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">API Key Required</h2>
           <p className="text-zinc-400 mb-6">
-            High-quality image generation requires a paid Google Cloud API key.
+            High-quality image generation requires a paid Google Cloud API key. If you are hosting this app externally, please set the <strong>VITE_GEMINI_API_KEY</strong> environment variable.
           </p>
           <button
             onClick={handleSelectKey}
