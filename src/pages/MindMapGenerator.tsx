@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { generateMindMapData } from '../utils/gemini';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from '../mockFirebase';
 import { db } from '../firebase';
-import { Brain, Sparkles, Loader2 } from 'lucide-react';
+import { Brain, Sparkles, Loader2, Key } from 'lucide-react';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
 
 export const MindMapGenerator: React.FC = () => {
@@ -14,6 +14,23 @@ export const MindMapGenerator: React.FC = () => {
   const [level, setLevel] = useState(userLevel);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsApiKey, setNeedsApiKey] = useState(false);
+
+  const handleSelectKey = async () => {
+    try {
+      // @ts-ignore
+      if (window.aistudio && window.aistudio.openSelectKey) {
+        // @ts-ignore
+        await window.aistudio.openSelectKey();
+        setNeedsApiKey(false);
+        setError('');
+      } else {
+        setError('Please configure VITE_GEMINI_API_KEY in your environment variables.');
+      }
+    } catch (e) {
+      console.error("Failed to open key selector", e);
+    }
+  };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +38,7 @@ export const MindMapGenerator: React.FC = () => {
 
     setLoading(true);
     setError('');
+    setNeedsApiKey(false);
 
     try {
       // 1. Generate mind map data using Gemini
@@ -42,7 +60,19 @@ export const MindMapGenerator: React.FC = () => {
       navigate(`/mindmaps/${docRef.id}`);
     } catch (err: any) {
       console.error('Error generating mind map:', err);
-      setError(err.message || 'Failed to generate mind map. Please try again.');
+      
+      if (err.message?.includes('PERMISSION_DENIED') || err.message?.includes('leaked')) {
+        setError('A sua chave de API foi bloqueada pelo Google ou é inválida. Por favor, selecione uma nova chave.');
+        setNeedsApiKey(true);
+        // @ts-ignore
+        if (window.aistudio && window.aistudio.openSelectKey) {
+          // @ts-ignore
+          window.aistudio.openSelectKey();
+        }
+      } else {
+        setError(err.message || 'Failed to generate mind map. Please try again.');
+      }
+
       if (err.message && err.message.includes('Firestore')) {
          handleFirestoreError(err, OperationType.CREATE, 'mindmaps');
       }
@@ -62,6 +92,22 @@ export const MindMapGenerator: React.FC = () => {
           Enter a topic and let AI create a structured visual learning map tailored to your level.
         </p>
       </div>
+
+      {needsApiKey && (
+        <div className="bg-purple-500/10 border border-purple-500/20 p-6 rounded-3xl mb-8 text-center">
+          <Key className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">API Key Required</h2>
+          <p className="text-zinc-400 mb-6">
+            The default API key has been blocked. Please select your own Google Cloud API key to continue.
+          </p>
+          <button
+            onClick={handleSelectKey}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors"
+          >
+            Select API Key
+          </button>
+        </div>
+      )}
 
       <form onSubmit={handleGenerate} className="bg-zinc-900 border border-zinc-800 p-6 md:p-8 rounded-3xl shadow-xl">
         {error && (

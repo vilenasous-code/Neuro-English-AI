@@ -1,12 +1,35 @@
 import { GoogleGenAI, Type } from '@google/genai';
 
-// Support both AI Studio environment and external deployments (like Hostinger)
-// WARNING: Hardcoding API keys in client-side code is a severe security risk.
-// Anyone inspecting the website's code can steal this key and use your quota/billing.
-// For a true production app, this should be moved to a backend server.
-const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyA9gaSqG8w7LBkkbA7xQ9VQwDhd_gk94II';
+export const getApiKey = () => {
+  // Prioritize the user-selected paid key (API_KEY) if available.
+  // Then fallback to the platform's default free key (GEMINI_API_KEY).
+  // If deployed externally, use VITE_GEMINI_API_KEY.
+  const keys = [
+    process.env.API_KEY,
+    process.env.GEMINI_API_KEY,
+    import.meta.env.VITE_GEMINI_API_KEY
+  ];
+  
+  // The Firebase API key was accidentally leaked and revoked. 
+  // If the user pasted it into their secrets, we must ignore it.
+  const leakedKey = 'AIzaSyDPAd8p0VCRV0-j9MU6hRQYrYy2Ji4iBN4';
+  
+  for (const key of keys) {
+    if (key && key !== leakedKey && key !== 'MISSING_API_KEY') {
+      return key;
+    }
+  }
+  
+  return 'MISSING_API_KEY';
+};
 
-export const ai = new GoogleGenAI({ apiKey });
+const getAIClient = () => {
+  const apiKey = getApiKey();
+  if (apiKey === 'MISSING_API_KEY') {
+    throw new Error("API Key is missing. Please configure VITE_GEMINI_API_KEY in your environment variables.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 const parseJSONResponse = (text: string | undefined, defaultVal: any) => {
   if (!text) return defaultVal;
@@ -20,9 +43,7 @@ const parseJSONResponse = (text: string | undefined, defaultVal: any) => {
 };
 
 export const generateMindMapData = async (topic: string, level: string) => {
-  if (apiKey === 'MISSING_API_KEY') {
-    throw new Error("API Key is missing. Please configure VITE_GEMINI_API_KEY in your environment variables.");
-  }
+  const ai = getAIClient();
 
   const prompt = `Create an English vocabulary and grammar mind map for the topic "${topic}" at CEFR level ${level}.
   
@@ -103,9 +124,7 @@ export const generateMindMapData = async (topic: string, level: string) => {
 };
 
 export const generateExercises = async (topic: string, level: string, nodes: any[]) => {
-  if (apiKey === 'MISSING_API_KEY') {
-    throw new Error("API Key is missing. Please configure VITE_GEMINI_API_KEY in your environment variables.");
-  }
+  const ai = getAIClient();
 
   const vocabulary = nodes.map(n => n.data.label).join(', ');
   const prompt = `Create 5 active recall exercises for an English learner at CEFR level ${level} based on the topic "${topic}".
@@ -142,9 +161,7 @@ export const generateExercises = async (topic: string, level: string, nodes: any
 };
 
 export const generateDialogue = async (topic: string, level: string, nodes: any[]) => {
-  if (apiKey === 'MISSING_API_KEY') {
-    throw new Error("API Key is missing. Please configure VITE_GEMINI_API_KEY in your environment variables.");
-  }
+  const ai = getAIClient();
 
   const vocabulary = nodes.map(n => n.data.label).join(', ');
   const prompt = `Create a realistic contextual dialogue between two people about "${topic}" for an English learner at CEFR level ${level}.

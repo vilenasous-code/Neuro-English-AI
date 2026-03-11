@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Brain, AlertCircle } from 'lucide-react';
+import { Brain, AlertCircle, Play } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { signIn } = useAuth();
@@ -13,8 +13,8 @@ export const Login: React.FC = () => {
       setIsLoading(true);
       await signIn();
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to sign in. Please try again or check your popup blocker.');
+      console.error('Start error:', err);
+      setError(err.message || 'Failed to start. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -41,14 +41,14 @@ export const Login: React.FC = () => {
         <button
           onClick={handleSignIn}
           disabled={isLoading}
-          className="w-full py-3.5 px-4 bg-white text-zinc-950 hover:bg-zinc-200 disabled:bg-zinc-400 disabled:cursor-not-allowed rounded-xl transition-colors font-semibold flex items-center justify-center gap-3"
+          className="w-full py-3.5 px-4 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-xl transition-colors font-semibold flex items-center justify-center gap-3"
         >
           {isLoading ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-zinc-900"></div>
+            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
           ) : (
             <>
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-              Continue with Google
+              <Play size={20} className="fill-current" />
+              Start Learning
             </>
           )}
         </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from '../mockFirebase';
 import { db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
 

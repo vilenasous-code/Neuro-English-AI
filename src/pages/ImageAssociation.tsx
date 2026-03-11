@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from '@google/genai';
 import { Image as ImageIcon, Loader2, Download, Key } from 'lucide-react';
+import { getApiKey } from '../utils/gemini';
 
 export const ImageAssociation: React.FC = () => {
   const [word, setWord] = useState('');
@@ -20,8 +21,8 @@ export const ImageAssociation: React.FC = () => {
           setHasKey(selected);
         } else {
           // Fallback for external deployments (Hostinger, Vercel, etc)
-          const key = process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyA9gaSqG8w7LBkkbA7xQ9VQwDhd_gk94II';
-          setHasKey(!!key);
+          const key = getApiKey();
+          setHasKey(key !== 'MISSING_API_KEY');
         }
       } catch (e) {
         console.error("Failed to check API key status", e);
@@ -60,7 +61,7 @@ export const ImageAssociation: React.FC = () => {
 
     try {
       // Create a fresh instance to ensure it uses the latest selected API key
-      const key = process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyA9gaSqG8w7LBkkbA7xQ9VQwDhd_gk94II';
+      const key = getApiKey();
       const ai = new GoogleGenAI({ apiKey: key });
 
       const response = await ai.models.generateContent({
@@ -93,7 +94,9 @@ export const ImageAssociation: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error generating image:', err);
-      if (err.message?.includes('Requested entity was not found')) {
+      if (err.message?.includes('PERMISSION_DENIED') || err.message?.includes('leaked')) {
+        setError('A sua chave de API foi bloqueada pelo Google ou é inválida. Se você estiver usando a Vercel/Hostinger, atualize a variável VITE_GEMINI_API_KEY com uma nova chave.');
+      } else if (err.message?.includes('Requested entity was not found')) {
         setError('API Key error. Please select a valid paid Google Cloud API key.');
         setHasKey(false);
         handleSelectKey();

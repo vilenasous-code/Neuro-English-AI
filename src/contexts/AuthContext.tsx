@@ -1,8 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../firebase';
+import { doc, getDoc, setDoc } from '../mockFirebase';
+import { db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
+
+export interface User {
+  uid: string;
+  email: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -21,48 +27,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userLevel, setUserLevel] = useState('B1'); // Default level
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    // Check local storage for existing guest session
+    const guestUid = localStorage.getItem('guest_uid');
+    if (guestUid) {
+      const currentUser = { 
+        uid: guestUid, 
+        email: 'guest@neuroenglish.ai',
+        displayName: 'Guest Learner'
+      };
       setUser(currentUser);
-      setLoading(false); // Set loading to false immediately so the app can render
       
-      if (currentUser) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-          if (userDoc.exists()) {
-            setUserLevel(userDoc.data().level || 'B1');
-          } else {
-            // Create new user profile
-            await setDoc(doc(db, 'users', currentUser.uid), {
-              uid: currentUser.uid,
-              email: currentUser.email,
-              level: 'B1',
-              createdAt: new Date().toISOString()
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
+      // Fetch user level
+      getDoc(doc(db, 'users', guestUid)).then(userDoc => {
+        if (userDoc.exists()) {
+          setUserLevel(userDoc.data().level || 'B1');
         }
-      }
-    });
-
-    return () => unsubscribe();
+      }).catch(console.error).finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const signIn = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      let guestUid = localStorage.getItem('guest_uid');
+      if (!guestUid) {
+        guestUid = 'guest_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('guest_uid', guestUid);
+      }
+      
+      const currentUser = { 
+        uid: guestUid, 
+        email: 'guest@neuroenglish.ai',
+        displayName: 'Guest Learner'
+      };
+      setUser(currentUser);
+      
+      // Create or fetch profile
+      const userDoc = await getDoc(doc(db, 'users', guestUid));
+      if (userDoc.exists()) {
+        setUserLevel(userDoc.data().level || 'B1');
+      } else {
+        await setDoc(doc(db, 'users', guestUid), {
+          uid: guestUid,
+          email: currentUser.email,
+          level: 'B1',
+          createdAt: new Date().toISOString()
+        });
+      }
     } catch (error) {
-      console.error('Error signing in', error);
+      console.error('Error starting session', error);
       throw error;
     }
   };
 
   const logOut = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error('Error signing out', error);
-    }
+    localStorage.removeItem('guest_uid');
+    setUser(null);
   };
 
   const updateLevel = async (level: string) => {

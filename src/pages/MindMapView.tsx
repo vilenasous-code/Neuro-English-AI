@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge } from '@xyflow/react';
+import { ReactFlow, MiniMap, Controls, Background, useNodesState, useEdgesState, addEdge, Connection, Edge, Panel } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useAuth } from '../contexts/AuthContext';
 import { CustomNode } from '../components/CustomNode';
-import { ArrowLeft, BookOpen, MessageSquare } from 'lucide-react';
+import { ArrowLeft, BookOpen, MessageSquare, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { useMindMap } from '../hooks/useMindMap';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
@@ -48,8 +48,8 @@ export const MindMapView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
-      <header className="p-4 border-b border-zinc-800 bg-zinc-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10">
+    <div className="absolute inset-0 flex flex-col bg-zinc-950">
+      <header className="p-4 border-b border-zinc-800 bg-zinc-900 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10 shrink-0">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate(-1)}
@@ -81,7 +81,7 @@ export const MindMapView: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 w-full relative">
+      <div className="flex-1 w-full relative bg-zinc-950">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -90,16 +90,29 @@ export const MindMapView: React.FC = () => {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
+          fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.1}
+          maxZoom={4}
           className="bg-zinc-950"
           colorMode="dark"
         >
-          <Controls className="bg-zinc-900 border-zinc-800 fill-zinc-400" />
+          <Controls 
+            className="bg-zinc-900 border-zinc-800 fill-zinc-400 shadow-xl rounded-xl overflow-hidden" 
+            showInteractive={false}
+          />
           <MiniMap 
             nodeColor="#6b21a8" 
             maskColor="rgba(9, 9, 11, 0.8)" 
-            className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden" 
+            className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-xl" 
+            pannable
+            zoomable
           />
-          <Background color="#27272a" gap={16} />
+          <Background color="#3f3f46" gap={24} size={2} />
+          
+          <Panel position="top-right" className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 p-3 rounded-xl shadow-xl text-xs text-zinc-400 hidden md:block">
+            <p><strong>Scroll</strong> to zoom</p>
+            <p><strong>Click & Drag</strong> to pan</p>
+          </Panel>
         </ReactFlow>
       </div>
     </div>

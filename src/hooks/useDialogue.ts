@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from '../mockFirebase';
 import { db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc } from '../mockFirebase';
 import { db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../utils/firestore';
 import { addDays } from 'date-fns';
